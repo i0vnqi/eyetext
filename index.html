@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#141a3c">
+<title>EyeText — من نظرتك .. إلى كلمات</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script defer src="https://cdn.jsdelivr.net/npm/webgazer@2/dist/webgazer.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+</head>
+<body>
+
+  <!-- شاشة المعايرة (تظهر فوق كل شيء عند الضغط على "بدء المعايرة") -->
+  <div id="calibration-overlay">
+    <p id="calib-msg">اختر أي حرف تبيه: ثبّت نظرك عليه ثم ارمش لتأكيده</p>
+    <div id="calib-grid">
+    </div>
+    <div id="calib-progress">0 / 9</div>
+  </div>
+
+  <div id="app">
+
+    <!-- الشريط الجانبي الأيسر -->
+    <aside id="sidebar">
+      <div id="brand">
+        <div id="brand-icon">👁️</div>
+        <div>
+          <div id="brand-name">EyeText</div>
+          <div id="brand-tag">من نظرتك .. إلى كلمات</div>
+        </div>
+      </div>
+
+      <nav id="nav">
+        <a href="#" class="nav-item active" data-view="home"><span class="nav-ic">🏠</span> الرئيسية</a>
+        <a href="#" class="nav-item" data-view="history"><span class="nav-ic">📄</span> النصوص السابقة</a>
+        <a href="#" class="nav-item" data-view="settings"><span class="nav-ic">⚙️</span> الإعدادات</a>
+        <a href="#" class="nav-item" data-view="help"><span class="nav-ic">❓</span> المساعدة</a>
+      </nav>
+
+      <div id="user-box">
+        <div id="user-row">
+          <div id="user-avatar">👤</div>
+          <div>
+            <div id="user-name">—</div>
+            <div id="user-role">مستخدم</div>
+          </div>
+        </div>
+        <button id="btn-logout">🚪 تسجيل الخروج</button>
+      </div>
+    </aside>
+
+    <!-- المنطقة الرئيسية -->
+    <main id="main">
+      <div id="view-home" class="view">
+      <header id="topbar">
+        <div id="topbar-text">
+          <h1>مرحباً بك في <span>EyeText</span></h1>
+          <p>نظام ذكي يحوّل حركة العين إلى نص مكتوب على الشاشة</p>
+        </div>
+        <button id="theme-toggle" title="تبديل المظهر">
+          <span class="ic-sun">☀️</span><span class="ic-moon">🌙</span>
+        </button>
+      </header>
+
+      <div id="content-grid">
+
+        <!-- بطاقة الكاميرا / المعايرة / لوحة الحروف -->
+        <section class="card" id="camera-card">
+          <div class="card-head">
+            <span>بث الكاميرا</span>
+            <span id="cam-status"><i class="dot"></i> نشط</span>
+          </div>
+
+          <div id="camera-stage">
+            <div id="video-wrap">
+              <canvas id="overlay-canvas"></canvas>
+              <div id="video-caption">جاري تتبع حركة العين</div>
+            </div>
+
+            <!-- لوحة المعايرة -->
+            <div id="calib-panel" class="side-panel">
+              <div class="side-ic">👁️</div>
+              <h3>معايرة العين (اختيارية)</h3>
+              <p>تحسّن دقة التتبع، لكنها ليست إجبارية: تقدر تبدأ الكتابة مباشرة بزر «بدء التحديد بالعين»</p>
+              <div id="calib-steps">
+                <span class="step"></span><span class="step"></span>
+                <span class="step"></span><span class="step"></span>
+              </div>
+              <button id="btn-start-calib" class="btn-primary">▶ معايرة (اختياري)</button>
+            </div>
+
+            <!-- لوحة الحروف (تظهر بدل لوحة المعايرة بعد الضغط على "بدء التحديد بالعين") -->
+            <div id="keyboard-panel" class="side-panel" hidden>
+              <div id="typing-station">
+                <div id="blink-hint">ثبّت نظرك على الحرف ثانيتين ليضيء، ثم ثبّته للتأكيد وارمش — وبين الكلمات اختر «مسافة»</div>
+                <div id="live-box"><span id="live-text" data-empty="1"></span></div>
+                <div id="keys-box"><div id="keyboard"></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- بطاقة النص المكتوب -->
+        <section class="card" id="output-card">
+          <div class="card-head"><span>📝 النص المكتوب</span></div>
+          <div id="output-text" contenteditable="false"></div>
+          <div id="output-foot">
+            <span id="char-count">0 حرف</span>
+            <div id="output-actions">
+              <button id="btn-clear">🗑 مسح النص</button>
+              <button id="btn-save">💾 حفظ النص</button>
+            </div>
+          </div>
+        </section>
+      </div>
+      </div><!-- /view-home -->
+
+      <!-- ============ صفحة: النصوص السابقة ============ -->
+      <section id="view-history" class="view" hidden>
+        <header class="page-head">
+          <h1>📄 النصوص السابقة</h1>
+          <p>الجمل التي حفظتها من قبل — تقدر تنسخها أو تستخدمها من جديد</p>
+        </header>
+        <div class="card"><div id="history-list"></div></div>
+      </section>
+
+      <!-- ============ صفحة: الإعدادات ============ -->
+      <section id="view-settings" class="view" hidden>
+        <header class="page-head">
+          <h1>⚙️ الإعدادات</h1>
+          <p>حسابك وتفضيلاتك</p>
+        </header>
+
+        <div class="card">
+          <div class="card-head"><span>👤 حسابي</span></div>
+          <div id="acc-line">—</div>
+          <div id="stats-row">
+            <div class="stat"><b id="st-sessions">—</b><span>جلسات</span></div>
+            <div class="stat"><b id="st-texts">—</b><span>نصوص محفوظة</span></div>
+            <div class="stat"><b id="st-letters">—</b><span>حروف مكتوبة</span></div>
+            <div class="stat"><b id="st-since">—</b><span>تاريخ الانضمام</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>✏️ بيانات الحساب</span></div>
+          <div class="form-grid">
+            <label>الاسم الكامل<input id="set-name" class="form-input" type="text"></label>
+            <label>البريد الإلكتروني<input id="set-email" class="form-input" type="email"></label>
+            <label>كلمة المرور الحالية <small>(مطلوبة فقط إذا غيّرت البريد)</small>
+              <input id="set-cur-email" class="form-input" type="password" autocomplete="current-password"></label>
+          </div>
+          <button id="btn-save-profile" class="btn-primary">حفظ التغييرات</button>
+          <div id="msg-profile" class="form-msg"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>🔒 تغيير كلمة المرور</span></div>
+          <div class="form-grid">
+            <label>كلمة المرور الحالية<input id="pw-cur" class="form-input" type="password" autocomplete="current-password"></label>
+            <label>كلمة المرور الجديدة<input id="pw-new" class="form-input" type="password" autocomplete="new-password"></label>
+            <label>أعد كتابة الجديدة<input id="pw-new2" class="form-input" type="password" autocomplete="new-password"></label>
+          </div>
+          <button id="btn-change-pw" class="btn-primary">تغيير كلمة المرور</button>
+          <div id="msg-pw" class="form-msg"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>🎛️ التفضيلات</span></div>
+          <div class="pref-row">
+            <span>المظهر</span>
+            <div><button id="theme-light" class="btn-ghost">☀️ فاتح</button> <button id="theme-dark" class="btn-ghost">🌙 داكن</button></div>
+          </div>
+          <div class="pref-row">
+            <span>حجم خط النص المكتوب</span>
+            <input type="range" id="pref-font" min="16" max="40" value="22"><b id="pref-font-val">22</b>
+          </div>
+          <div class="pref-row">
+            <span>مدة التأكيد بالنظر (ث)</span>
+            <input type="range" id="pref-dwell" min="2" max="8" step="0.5" value="5"><b id="pref-dwell-val">5</b>
+          </div>
+          <p class="muted">التفضيلات تُحفظ تلقائيًا على هذا المتصفح.</p>
+        </div>
+      </section>
+
+      <!-- ============ صفحة: المساعدة ============ -->
+      <section id="view-help" class="view" hidden>
+        <header class="page-head"><h1>❓ المساعدة</h1></header>
+        <div class="card"><p class="muted">قريبًا.</p></div>
+      </section>
+    </main>
+
+    <!-- الشريط الجانبي الأيمن -->
+    <aside id="right-panel">
+      <button id="btn-start-detect" class="btn-primary btn-big">▶ بدء التحديد بالعين</button>
+      <button id="btn-camera-off" class="btn-ghost btn-big">📷 إغلاق الكاميرا</button>
+
+      <div class="panel-box">
+        <h4>⚙️ كيف يعمل؟</h4>
+        <ol>
+          <li><span class="num">📷</span> يتم تتبع حركة عينيك باستخدام الكاميرا</li>
+          <li><span class="num">🧠</span> ثم يتم تحليلها بالذكاء الاصطناعي</li>
+          <li><span class="num">📄</span> وتحويلها إلى نص مكتوب</li>
+        </ol>
+      </div>
+
+      <div class="panel-box">
+        <h4>🛡️ خصوصيتك مهمة</h4>
+        <p>جميع البيانات تُستخدم فقط لتحسين التجربة ولا يتم مشاركتها مع أي طرف ثالث.</p>
+      </div>
+
+      <div class="panel-box">
+        <h4>⚙️ إعدادات سريعة</h4>
+        <div class="quick-row">
+          <span>تغيير حجم الخط</span>
+          <input type="range" id="font-size-slider" min="16" max="40" value="22">
+        </div>
+        <div class="quick-row">
+          <span>عرض الكاميرا</span>
+          <label class="switch"><input type="checkbox" id="toggle-cam" checked><span></span></label>
+        </div>
+        <div class="quick-row">
+          <span>مدة التأكيد (ث)</span>
+          <input type="range" id="dwell-slider" min="2" max="8" step="0.5" value="5">
+        </div>
+      </div>
+
+      <div id="status-line"></div>
+    </aside>
+
+  </div>
+
+  <script defer src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>تسجيل الدخول — لوحة الكتابة بتتبع النظر</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* احتياط: تعمل الصفحة بشكل سليم حتى لو ما انحمل style.css */
+  *, *::before, *::after { box-sizing:border-box; }
+  :root { --accent1:#4f5bd5; --accent2:#8b5cf6; --shadow:0 8px 30px rgba(80,90,180,0.12); --bg1:#eef2fb; --bg2:#e3e9fb; }
+  body { margin:0; font-family:"Tahoma","Segoe UI",sans-serif; background:linear-gradient(135deg,var(--bg1),var(--bg2)); }
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; overflow:auto; }
+  /* ألوان صلبة (بدون شفافية) بنفس ألوان الموقع */
+  body { --solid-card:#141a3c; --solid-border:#22c1dc; --solid-input:#1c2048; --solid-input-border:#2a9db3; }
+  body[data-theme="dark"] { --solid-card:#141a3c; --solid-border:#22c1dc; --solid-input:#1c2048; --solid-input-border:#2a9db3; }
+  #auth-box { background:var(--solid-card); border:2px solid var(--solid-border); border-radius:20px; padding:30px 28px; width:100%; max-width:380px; box-shadow:var(--shadow); backdrop-filter:none; --text:#eef0ff; --text-dim:#a4a9d6; }
+  #auth-brand { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; }
+  #auth-icon { width:44px; height:44px; border-radius:50%; background:var(--solid-card); border:2px solid #22c1dc; display:flex; align-items:center; justify-content:center; font-size:21px; }
+  #auth-name { font-weight:bold; font-size:20px; color:var(--text); line-height:1.2; }
+  #auth-tag { font-size:11px; color:var(--text-dim); }
+  #auth-box h1 { font-size:17px; color:var(--text); margin:0 0 16px; text-align:center; }
+  #auth-box input { width:100%; padding:11px 14px; margin-bottom:12px; border-radius:12px; border:1px solid var(--solid-input-border); background:var(--solid-input); color:var(--text); font-size:14px; font-family:inherit; outline:none; transition:border-color .15s, box-shadow .15s; }
+  #auth-box input::placeholder { color:var(--text-dim); }
+  #auth-box input:focus { border-color:#22c1dc; box-shadow:0 0 0 3px rgba(34,193,220,.25); }
+  #auth-box button { width:100%; padding:11px; background:var(--solid-card); color:#fff; border:2px solid #22c1dc; border-radius:30px; font-weight:bold; font-size:14px; font-family:inherit; cursor:pointer; margin-bottom:10px; box-shadow:0 6px 18px rgba(34,193,220,.22); }
+  #auth-box button:hover { filter:brightness(1.07); }
+  #auth-box button:disabled { opacity:.6; cursor:not-allowed; }
+  #auth-box #toggle-mode { background:var(--solid-input); color:var(--text); border:1px solid var(--solid-input-border); box-shadow:none; font-weight:normal; }
+  #forgot-link { color:#9aa6ff; font-size:13px; text-decoration:none; }
+  #forgot-link:hover { text-decoration:underline; }
+  #auth-msg { color:#ff7b7b; font-size:13px; text-align:center; min-height:18px; line-height:1.7; }
+  body[data-theme="dark"] #forgot-link, body[data-theme="dark"] .back, body[data-theme="dark"] .link { color:#9aa6ff; }
+</style>
+</head>
+<body>
+    <script>document.body.setAttribute("data-theme", localStorage.getItem("eyetext_theme") || "light");</script>
+  <div id="auth-box">
+    <div id="auth-brand">
+      <div id="auth-icon">👁️</div>
+      <div><div id="auth-name">EyeText</div><div id="auth-tag">من نظرتك .. إلى كلمات</div></div>
+    </div>
+    <h1 id="auth-title">تسجيل الدخول</h1>
+    <div id="name-field" style="display:none;">
+      <input type="text" id="full_name" placeholder="الاسم الكامل">
+    </div>
+    <input type="email" id="email" placeholder="البريد الإلكتروني">
+    <input type="password" id="password" placeholder="كلمة المرور">
+    <button id="submit-btn">دخول</button>
+    <div id="forgot-wrap" style="text-align:center; margin-bottom:10px;"><a href="forgot.html" id="forgot-link">نسيت كلمة المرور؟</a></div>
+    <button id="toggle-mode">ليس لديك حساب؟ أنشئ واحدًا</button>
+    <div id="auth-msg"></div>
+  </div>
+
+  <script>
+    let mode = "login"; // login | register
+    const els = {
+      title: document.getElementById("auth-title"),
+      nameField: document.getElementById("name-field"),
+      fullName: document.getElementById("full_name"),
+      email: document.getElementById("email"),
+      password: document.getElementById("password"),
+      submit: document.getElementById("submit-btn"),
+      toggle: document.getElementById("toggle-mode"),
+      msg: document.getElementById("auth-msg"),
+    };
+
+    els.toggle.addEventListener("click", () => {
+      mode = mode === "login" ? "register" : "login";
+      els.title.textContent = mode === "login" ? "تسجيل الدخول" : "إنشاء حساب جديد";
+      els.submit.textContent = mode === "login" ? "دخول" : "إنشاء الحساب";
+      els.toggle.textContent = mode === "login" ? "ليس لديك حساب؟ أنشئ واحدًا" : "لديك حساب؟ سجّل الدخول";
+      els.nameField.style.display = mode === "register" ? "block" : "none";
+      document.getElementById("forgot-wrap").style.display = mode === "login" ? "block" : "none";
+      els.msg.textContent = "";
+    });
+
+    els.submit.addEventListener("click", async () => {
+      els.msg.textContent = "";
+      els.msg.style.color = "";
+      const email = els.email.value.trim();
+      const password = els.password.value;
+
+      if (mode === "register") {
+        const full_name = els.fullName.value.trim();
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ full_name, email, password }),
+        }).then((r) => r.json());
+        if (!res.ok) { els.msg.textContent = res.error; return; }
+        els.msg.style.color = "#16a34a";
+        els.msg.textContent = "تم إنشاء الحساب، سجّل الدخول الآن";
+        els.toggle.click();
+        return;
+      }
+
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }).then((r) => r.json());
+
+      if (!res.ok) { els.msg.textContent = res.error; return; }
+
+      localStorage.setItem("gaze_token", res.token);
+      localStorage.setItem("gaze_user_name", res.full_name);
+      localStorage.setItem("gaze_user_id", res.user_id);
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>

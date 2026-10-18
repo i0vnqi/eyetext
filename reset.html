@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>تعيين كلمة مرور جديدة — EyeText</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* احتياط: تعمل الصفحة بشكل سليم حتى لو ما انحمل style.css */
+  *, *::before, *::after { box-sizing:border-box; }
+  :root { --accent1:#4f5bd5; --accent2:#8b5cf6; --shadow:0 8px 30px rgba(80,90,180,0.12); --bg1:#eef2fb; --bg2:#e3e9fb; }
+  body { margin:0; font-family:"Tahoma","Segoe UI",sans-serif; background:linear-gradient(135deg,var(--bg1),var(--bg2)); }
+  body { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; overflow:auto; }
+  /* ألوان صلبة (بدون شفافية) بنفس ألوان الموقع */
+  body { --solid-card:#141a3c; --solid-border:#22c1dc; --solid-input:#1c2048; --solid-input-border:#2a9db3; }
+  body[data-theme="dark"] { --solid-card:#141a3c; --solid-border:#22c1dc; --solid-input:#1c2048; --solid-input-border:#2a9db3; }
+  #auth-box { background:var(--solid-card); border:2px solid var(--solid-border); border-radius:20px; padding:30px 28px; width:100%; max-width:380px; box-shadow:var(--shadow); backdrop-filter:none; --text:#eef0ff; --text-dim:#a4a9d6; }
+  #auth-brand { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:18px; }
+  #auth-icon { width:44px; height:44px; border-radius:50%; background:var(--solid-card); border:2px solid #22c1dc; display:flex; align-items:center; justify-content:center; font-size:21px; }
+  #auth-name { font-weight:bold; font-size:20px; color:var(--text); line-height:1.2; }
+  #auth-tag { font-size:11px; color:var(--text-dim); }
+  #auth-box h1 { font-size:17px; color:var(--text); margin:0 0 16px; text-align:center; }
+  #auth-box input { width:100%; padding:11px 14px; margin-bottom:12px; border-radius:12px; border:1px solid var(--solid-input-border); background:var(--solid-input); color:var(--text); font-size:14px; font-family:inherit; outline:none; transition:border-color .15s, box-shadow .15s; }
+  #auth-box input::placeholder { color:var(--text-dim); }
+  #auth-box input:focus { border-color:#22c1dc; box-shadow:0 0 0 3px rgba(34,193,220,.25); }
+  #auth-box button { width:100%; padding:11px; background:var(--solid-card); color:#fff; border:2px solid #22c1dc; border-radius:30px; font-weight:bold; font-size:14px; font-family:inherit; cursor:pointer; margin-bottom:10px; box-shadow:0 6px 18px rgba(34,193,220,.22); }
+  #auth-box button:hover { filter:brightness(1.07); }
+  #auth-box button:disabled { opacity:.6; cursor:not-allowed; }
+  .link { display:none; text-align:center; color:#9aa6ff; font-size:13px; margin-top:6px; text-decoration:none; }
+  #auth-msg { color:var(--text-dim); font-size:13px; text-align:center; min-height:18px; line-height:1.7; }
+  body[data-theme="dark"] #forgot-link, body[data-theme="dark"] .back, body[data-theme="dark"] .link { color:#9aa6ff; }
+</style>
+</head>
+<body>
+    <script>document.body.setAttribute("data-theme", localStorage.getItem("eyetext_theme") || "light");</script>
+  <div id="auth-box">
+    <div id="auth-brand">
+      <div id="auth-icon">👁️</div>
+      <div><div id="auth-name">EyeText</div><div id="auth-tag">من نظرتك .. إلى كلمات</div></div>
+    </div>
+    <h1>تعيين كلمة مرور جديدة</h1>
+
+    <div id="form" style="display:none;">
+      <input type="password" id="pw1" placeholder="كلمة المرور الجديدة">
+      <input type="password" id="pw2" placeholder="أعد كتابة كلمة المرور">
+      <button id="submit-btn">حفظ كلمة المرور</button>
+    </div>
+
+    <div id="auth-msg">جاري التحقق من الرابط...</div>
+    <a class="link" id="to-forgot" href="forgot.html">اطلب رابطًا جديدًا</a>
+    <a class="link" id="to-login" href="login.html">الذهاب لتسجيل الدخول</a>
+  </div>
+
+  <script>
+    const token = new URLSearchParams(location.search).get("token") || "";
+    const form = document.getElementById("form");
+    const msg = document.getElementById("auth-msg");
+    const btn = document.getElementById("submit-btn");
+    const pw1 = document.getElementById("pw1");
+    const pw2 = document.getElementById("pw2");
+
+    const post = (path, data) => fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).then((r) => r.json());
+
+    function showInvalid() {
+      form.style.display = "none";
+      msg.style.color = "#d93a3a";
+      msg.textContent = "الرابط غير صالح أو منتهي الصلاحية.";
+      document.getElementById("to-forgot").style.display = "block";
+    }
+
+    async function check() {
+      if (!token) { showInvalid(); return; }
+      try {
+        const res = await post("/api/reset_check", { token });
+        if (res.ok) { form.style.display = "block"; msg.textContent = ""; pw1.focus(); }
+        else showInvalid();
+      } catch (e) {
+        msg.style.color = "#d93a3a";
+        msg.textContent = "تعذر الاتصال بالخادم";
+      }
+    }
+
+    async function save() {
+      msg.style.color = "#d93a3a";
+      msg.textContent = "";
+      if (pw1.value.length < 4) { msg.textContent = "كلمة المرور 4 أحرف على الأقل"; return; }
+      if (pw1.value !== pw2.value) { msg.textContent = "كلمتا المرور غير متطابقتين"; return; }
+
+      btn.disabled = true;
+      try {
+        const res = await post("/api/reset", { token, password: pw1.value });
+        if (res.ok) {
+          form.style.display = "none";
+          msg.style.color = "#16a34a";
+          msg.textContent = "تم تغيير كلمة المرور. سيتم تحويلك لتسجيل الدخول...";
+          document.getElementById("to-login").style.display = "block";
+          setTimeout(() => (location.href = "login.html"), 2500);
+        } else {
+          msg.textContent = res.error;
+          if (/الرابط/.test(res.error)) showInvalid();
+        }
+      } catch (e) {
+        msg.textContent = "تعذر الاتصال بالخادم";
+      }
+      btn.disabled = false;
+    }
+
+    btn.addEventListener("click", save);
+    pw2.addEventListener("keydown", (e) => { if (e.key === "Enter") save(); });
+    check();
+  </script>
+</body>
+</html>
